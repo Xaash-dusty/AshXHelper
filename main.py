@@ -1,15 +1,19 @@
+import asyncio
 import os
 
+import aiosqlite
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import Message
 from dotenv import load_dotenv
 
+from database.users import init_db
 from handlers.common import router as common_router
-from handlers.echo import router as echo_router
-from handlers.greet import router as greet_router
-from handlers.inline import router as inline_router
-from handlers.menu import router as menu_router
+from handlers.editing_profile import router as editing_profile_router
+from handlers.profile import router as profile_router
+from handlers.registration import router as register_router
+from handlers.undefined_msgs import router as undefined_msgs_router
+from middlewares.db_middleware import DatabaseMiddleware
 
 load_dotenv()
 token = os.getenv("BOT_TOKEN")
@@ -26,8 +30,23 @@ async def cmd_stop(message: Message):
     await dp.stop_polling()
 
 
-dp.include_routers(greet_router, common_router, echo_router, inline_router, menu_router)
+async def main():
+    dp.include_routers(
+        common_router,
+        register_router,
+        editing_profile_router,
+        profile_router,
+        undefined_msgs_router,
+    )
+    async with aiosqlite.connect("database/users.db") as db:
+        db.row_factory = aiosqlite.Row
+        await init_db(db)
+        dp.message.middleware(DatabaseMiddleware(db))
+        dp.callback_query.middleware(DatabaseMiddleware(db))
+
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    dp.run_polling(bot)
+    asyncio.run(main())
