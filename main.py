@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 from database.users import init_db
 from handlers.common import router as common_router
 from handlers.editing_profile import router as editing_profile_router
+from handlers.fallbacks import router as fallbacks_router
 from handlers.profile import router as profile_router
-from handlers.registration import router as register_router
-from handlers.undefined_msgs import router as undefined_msgs_router
+from handlers.registration import router as registration_router
 from middlewares.db_middleware import DatabaseMiddleware
 
 load_dotenv()
@@ -33,12 +33,12 @@ async def cmd_stop(message: Message):
 async def main():
     dp.include_routers(
         common_router,
-        register_router,
+        registration_router,
         editing_profile_router,
         profile_router,
-        undefined_msgs_router,
+        fallbacks_router,
     )
-    async with aiosqlite.connect("database/users.db") as db:
+    async with aiosqlite.connect("data/users.db") as db:
         db.row_factory = aiosqlite.Row
         await init_db(db)
         dp.message.middleware(DatabaseMiddleware(db))

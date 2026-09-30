@@ -12,11 +12,8 @@ async def init_db(db: Connection) -> None:
 
 
 async def is_user_exists(db: Connection, user_id: int) -> bool:
-    async with db.execute(
-        "SELECT 1 FROM users WHERE user_id = ?", (user_id,)
-    ) as cursor:
-        result = await cursor.fetchone()
-        return bool(result)
+    user = await get_user(db=db, user_id=user_id)
+    return user is not None
 
 
 async def create_user(
@@ -37,14 +34,17 @@ async def get_user(db: Connection, user_id: int) -> Row | None:
         return user
 
 
-async def delete_user(db: Connection, user_id: int) -> None:
-    await db.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
-    await db.commit()
+async def delete_user(db: Connection, user_id: int) -> bool:
+    async with db.execute("DELETE FROM users WHERE user_id = ?", (user_id,)) as cursor:
+        await db.commit()
+        return cursor.rowcount > 0
 
 
-async def edit_name(db: Connection, user_id: int, new_name: str) -> dict[str, str]:
+async def edit_name(db: Connection, user_id: int, new_name: str) -> str:
     user = await get_user(db=db, user_id=user_id)
+    if user is None:
+        raise ValueError("Такого пользователя не существует")
     old_name = user["name"]
     await db.execute("UPDATE users SET name = ? WHERE user_id = ?", (new_name, user_id))
     await db.commit()
-    return {"old_name": old_name, "new_name": new_name}
+    return old_name

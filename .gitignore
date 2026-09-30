@@ -2,5 +2,5 @@
 .env
 __pycache__/
 info/
-database/users.db
+data/
 messages.jsonl

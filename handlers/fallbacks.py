@@ -1,7 +1,13 @@
 from aiogram import F, Router
+from aiogram.filters import Command
 from aiogram.types import Message
 
 router = Router()
+
+
+@router.message(Command("cancel"))
+async def on_cancel_outside_state(message: Message):
+    await message.answer("Нечего отменять")
 
 
 @router.message(F.text.startswith("/"))
